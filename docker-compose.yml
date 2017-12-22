@@ -1,0 +1,69 @@
+version: '3'
+
+services:
+  es:
+    container_name: es
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.1.1
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    environment:
+      - ELASTIC_PASSWORD=MagicWord
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - transport.host=0.0.0.0
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      # - cluster.name=full-house
+      # - node.name=Jesse
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - default
+
+  web:
+    container_name: web
+    image: abiosoft/caddy:latest
+    ports:
+      - "443:2015"
+    volumes:
+      - ./Site/Caddyfile:/etc/Caddyfile
+      - ./Site/public:/srv
+    networks:
+      - default
+
+  api-init:
+    container_name: api-init
+    build: .
+    volumes:
+      - ./:/usr/src/app
+      - elixir_cache:/usr/src/app/deps
+    working_dir: /usr/src/app
+    entrypoint: sh -c "mix deps.get && mix compile"
+    networks:
+      - default
+  api:
+    container_name: api
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - MIX_ENV=prod
+      - ES_HOST=es
+      - ES_PORT=9200
+    env_file: .env
+    volumes:
+      - ./:/usr/src/app
+      - elixir_cache:/usr/src/app/deps
+    working_dir: /usr/src/app
+    entrypoint: mix run --no-halt
+    networks:
+      - default
+
+volumes:
+  es_data:
+    driver: 'local'
+  elixir_cache:
+    driver: 'local'

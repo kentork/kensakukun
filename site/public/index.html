@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="/favicons/favicon-32x32.png" sizes="32x32">
+  <link rel="stylesheet" href="/css/bulma.min.css" />
+  <link rel="stylesheet" href="/css/font-awesome.min.css" />
+  <script src="/js/clipboard.min.js"></script>
+  <title>検索君</title>
+</head>
+
+<body>
+  <app></app>
+  <script src="/component/app.tag" type="riot/tag"></script>
+  <script src="/js/riot+compiler.min.js"></script>
+  <script>
+    var scope = [
+      'https://www.googleapis.com/auth/drive.metadata.readonly',
+      'https://www.googleapis.com/auth/drive.readonly'
+    ].join(' ')
+
+    function checkAuth() {
+      fetch(`/api/oauth/google/client_id`)
+        .then(response => response.status == 200 ? response.text() : "")
+        .then(client_id => {
+          if (client_id !== "") {
+            gapi.auth.authorize({
+              'client_id': client_id,
+              'scope': scope,
+              'immediate': true
+            }, (authResult) => {
+              if (authResult && !authResult.error) {
+                gapi.client.load('drive', 'v2');
+                riot.mount('app', {
+                  enable_login: true,
+                  logged_in: true
+                })
+              } else {
+                riot.mount('app', {
+                  enable_login: true,
+                  logged_in: false,
+                  client_id: client_id,
+                  scope: scope
+                })
+              }
+            })
+          } else {
+            riot.mount('app', {
+              enable_login: false
+            })
+          }
+        })
+    }
+  </script>
+  <script src="https://apis.google.com/js/client.js?onload=checkAuth"></script>
+</body>
+
+</html>

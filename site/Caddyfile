@@ -1,0 +1,14 @@
+0.0.0.0 {
+  root /srv
+  gzip
+  tls self_signed
+
+  index index.html
+  errors {
+    404 404.html
+  }
+
+  proxy /api http://api:8080/ {
+    transparent
+  }
+}
